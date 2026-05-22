@@ -2,8 +2,7 @@
  * Wireless Gesture Glove - glove firmware (ESP32).
  *
  * Reads the IMU and finger-touch inputs, assembles a GesturePacket and
- * transmits it to the dongle over the nRF24L01 radio link. Modules are
- * added per phase - see README.md.
+ * transmits it to the dongle over the nRF24L01 radio link.
  */
 #include <Arduino.h>
 
