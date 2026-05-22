@@ -7,6 +7,8 @@
  */
 #include <Arduino.h>
 
+#include <protocol.h>
+
 void setup() {
     Serial.begin(115200);
 }
