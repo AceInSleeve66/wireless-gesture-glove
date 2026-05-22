@@ -42,8 +42,12 @@ constexpr uint8_t CONTACT_PINKY  = 1 << 2;  // pinky + thumb  - DPI / sleep
 // The glove only senses: it sends raw orientation and contact state. All
 // interpretation (calibration, cursor mapping, gestures) happens on the
 // dongle.
+//
+// `packed` keeps the byte layout identical on the ESP32 glove and the
+// AVR dongle - without it the ESP32 pads the struct to align float on
+// 4 bytes, shifting every field the dongle reads.
 
-struct GesturePacket {
+struct __attribute__((packed)) GesturePacket {
     uint8_t version;   // == PROTOCOL_VERSION
     uint8_t contacts;  // CONTACT_* bitmask of fingertip contacts
     float   eulerX;    // BNO055 Euler angle, degrees - heading / yaw

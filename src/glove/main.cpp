@@ -1,14 +1,20 @@
 /**
- * Wireless Gesture Glove — glove firmware (ESP32).
+ * Wireless Gesture Glove - glove firmware (ESP32).
  *
- * Reads the IMU and finger-touch inputs and streams them to the dongle
- * over the nRF24L01 radio link. Modules are added per phase — see README.md.
+ * Reads the IMU and finger-touch inputs, assembles a GesturePacket and
+ * transmits it to the dongle over the nRF24L01 radio link. Modules are
+ * added per phase - see README.md.
  */
 #include <Arduino.h>
 
 #include "imu.h"
 #include "touch.h"
+#include "radio.h"
 #include <protocol.h>
+
+// nRF24L01 transmit cadence. 50 Hz is smooth for pointing and leaves the
+// radio idle between packets; the contacts are still sampled every loop.
+constexpr unsigned long TX_INTERVAL_MS = 20;
 
 void setup() {
     Serial.begin(115200);
@@ -20,30 +26,52 @@ void setup() {
         delay(1000);
     }
     Serial.println("BNO055 ready");
+
+    while (!radioBegin()) {
+        Serial.println("nRF24L01 not detected - check wiring");
+        delay(1000);
+    }
+    Serial.println("nRF24L01 ready");
 }
 
 void loop() {
+    // Sample the contacts every pass so debouncing stays crisp.
     TouchState t = touchRead();
 
-    // Report taps and holds the instant they are classified.
-    for (int i = 0; i < FINGER_COUNT; i++) {
-        if (t.gesture[i] == GESTURE_TAP) {
-            Serial.printf("finger %d  tap\n", i);
-        } else if (t.gesture[i] == GESTURE_HOLD) {
-            Serial.printf("finger %d  hold\n", i);
-        }
+    static unsigned long lastTx = 0;
+    if (millis() - lastTx < TX_INTERVAL_MS) {
+        return;
     }
+    lastTx = millis();
 
-    // Stream orientation and contact levels at a steady readable rate.
+    Orientation o = imuRead();
+
+    // main.cpp assembles the wire packet from the sensor modules' output.
+    GesturePacket packet;
+    packet.version  = PROTOCOL_VERSION;
+    packet.contacts = 0;
+    if (t.contact[FINGER_MIDDLE]) {
+        packet.contacts |= CONTACT_MIDDLE;
+    }
+    if (t.contact[FINGER_RING]) {
+        packet.contacts |= CONTACT_RING;
+    }
+    if (t.contact[FINGER_PINKY]) {
+        packet.contacts |= CONTACT_PINKY;
+    }
+    packet.eulerX = o.x;
+    packet.eulerY = o.y;
+    packet.eulerZ = o.z;
+
+    bool ok = radioSend(packet);
+
+    // Report transmit status at a readable rate.
     static unsigned long lastReport = 0;
-    if (millis() - lastReport >= 100) {
+    if (millis() - lastReport >= 250) {
         lastReport = millis();
-        Orientation o = imuRead();
-        Serial.printf("orientation  x=%6.1f  y=%6.1f  z=%6.1f   "
-                      "contacts  M%d R%d P%d\n",
-                      o.x, o.y, o.z,
-                      t.contact[FINGER_MIDDLE],
-                      t.contact[FINGER_RING],
-                      t.contact[FINGER_PINKY]);
+        Serial.printf("tx %s  x=%6.1f y=%6.1f z=%6.1f  contacts=0x%02X\n",
+                      ok ? "ok" : "--",
+                      packet.eulerX, packet.eulerY, packet.eulerZ,
+                      packet.contacts);
     }
 }
