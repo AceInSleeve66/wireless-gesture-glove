@@ -26,3 +26,17 @@ communicate over a 2.4 GHz nRF24L01 radio link.
 | Radio adapter   | Haitronic 8-pin socket adapter for wireless transceiver   | Accepts 5 V, supplies a regulated 3.3 V to the nRF24 |
 | Decoupling      | 47 µF capacitor                                           | Across the nRF24 VCC/GND for supply stability |
 | Host link       | USB cable to PC                                           | Power and HID data |
+
+## Schematics
+
+### Glove
+
+![Glove schematic](schematics/glove.svg)
+
+PDF source: [`schematics/glove.pdf`](schematics/glove.pdf)
+
+### Dongle
+
+![Dongle schematic](schematics/dongle.svg)
+
+PDF source: [`schematics/dongle.pdf`](schematics/dongle.pdf)
