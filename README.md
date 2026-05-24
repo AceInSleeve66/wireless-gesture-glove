@@ -38,7 +38,7 @@ radio link:
 
 ## Hardware
 
-The full bill of materials, wiring tables, and diagrams are in
+The full bill of materials, wiring tables, and schematics are in
 [`docs/hardware.md`](docs/hardware.md).
 
 | Device | Core parts |
